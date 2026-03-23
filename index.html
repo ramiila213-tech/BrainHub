@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glow Dodge</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #0f172a, #111827);
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 430px;
+  }
+
+  .title {
+    text-align: center;
+    margin-bottom: 14px;
+  }
+
+  .title h1 {
+    margin: 0 0 6px;
+    font-size: 2rem;
+  }
+
+  .title p {
+    margin: 0;
+    color: #cbd5e1;
+  }
+
+  .game {
+    width: 100%;
+    height: 640px;
+    background: linear-gradient(180deg, #111827, #0b1220);
+    border-radius: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.08);
+    touch-action: none;
+  }
+
+  .hud {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    z-index: 20;
+    font-weight: bold;
+  }
+
+  .hud-box {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+  }
+
+  .player {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+    border-radius: 12px;
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 18px rgba(56,189,248,0.65);
+    z-index: 10;
+  }
+
+  .obstacle {
+    width: 46px;
+    height: 46px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-radius: 12px;
+    position: absolute;
+    top: -60px;
+    box-shadow: 0 0 18px rgba(239,68,68,0.55);
+  }
+
+  .coin {
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, #22c55e, #86efac);
+    border-radius: 50%;
+    position: absolute;
+    top: -30px;
+    box-shadow: 0 0 16px rgba(34,197,94,0.7);
+  }
+
+  .start-screen, .game-over {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 10, 20, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    padding: 24px;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 320px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    padding: 24px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+  }
+
+  .panel h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.8rem;
+  }
+
+  .panel p {
+    color: #cbd5e1;
+    line-height: 1.55;
+  }
+
+  button {
+    border: none;
+    border-radius: 14px;
+    padding: 12px 18px;
+    background: linear-gradient(135deg, #38bdf8, #22c55e);
+    color: #04111f;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 10px;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .control-btn {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 16px 0;
+    font-size: 1.3rem;
+    font-weight: 900;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  .hint {
+    text-align: center;
+    margin-top: 12px;
+    color: #94a3b8;
+    font-size: 0.95rem;
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="title">
+      <h1>Glow Dodge</h1>
+      <p>Dodge the red blocks. Grab the green coins. Survive as long as you can.</p>
+    </div>
+
+    <div class="game" id="game">
+      <div class="hud">
+        <div class="hud-box">Score: <span id="score">0</span></div>
+        <div class="hud-box">Best: <span id="best">0</span></div>
+      </div>
+
+      <div class="player" id="player"></div>
+
+      <div class="start-screen" id="startScreen">
+        <div class="panel">
+          <h2>Play Glow Dodge</h2>
+          <p>Use the on-screen buttons, drag the blue block with your mouse/finger, or use arrow keys / A and D.</p>
+          <button id="startBtn">Start Game</button>
+        </div>
+      </div>
+
+      <div class="game-over hidden" id="gameOverScreen">
+        <div class="panel">
+          <h2>Game Over</h2>
+          <p>Your score: <strong id="finalScore">0</strong></p>
+          <button id="restartBtn">Play Again</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="control-btn" id="leftBtn">⬅</div>
+      <div class="control-btn" id="rightBtn">➡</div>
+    </div>
+
+    <div class="hint">Works with keyboard, mouse, and touch.</div>
+  </div>
+
+<script>
+  const game = document.getElementById('game');
+  const player = document.getElementById('player');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const startScreen = document.getElementById('startScreen');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const finalScoreEl = document.getElementById('finalScore');
+  const startBtn = document.getElementById('startBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const leftBtn = document.getElementById('leftBtn');
+  const rightBtn = document.getElementById('rightBtn');
+
+  let score = 0;
+  let best = Number(localStorage.getItem('glowDodgeBest') || 0);
+  let running = false;
+  let spawnTimer = null;
+  let animationFrame = null;
+  let lastTime = 0;
+  let moveLeftHeld = false;
+  let moveRightHeld = false;
+  let obstacles = [];
+  let coins = [];
+  let speedBase = 230;
+  let coinBase = 170;
+  let playerX = 0;
+  const playerWidth = 44;
+
+  bestEl.textContent = best;
+
+  function setupPlayer() {
+    const gameWidth = game.clientWidth;
+    playerX = (gameWidth - playerWidth) / 2;
+    player.style.left = playerX + 'px';
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function movePlayer(dx) {
+    const maxX = game.clientWidth - playerWidth;
+    playerX = clamp(playerX + dx, 0, maxX);
+    player.style.left = playerX + 'px';
+  }
+
+  function setPlayerToPointer(clientX) {
+    const rect = game.getBoundingClientRect();
+    const maxX = game.clientWidth - playerWidth;
+    const x = clientX - rect.left - playerWidth / 2;
+    playerX = clamp(x, 0, maxX);
+    player.style.left = playerX + 'px';
+  }
+
+  function createObstacle() {
+    const el = document.createElement('div');
+    el.className = 'obstacle';
+    const x = Math.random() * (game.clientWidth - 46);
+    el.style.left = x + 'px';
+    el.style.top = '-60px';
+    game.appendChild(el);
+    obstacles.push({ el, x, y: -60, size: 46, speed: speedBase + Math.random() * 110 + score * 1.2 });
+  }
+
+  function createCoin() {
+    const el = document.createElement('div');
+    el.className = 'coin';
+    const x = Math.random() * (game.clientWidth - 22);
+    el.style.left = x + 'px';
+    el.style.top = '-30px';
+    game.appendChild(el);
+    coins.push({ el, x, y: -30, size: 22, speed: coinBase + Math.random() * 80 + score * 0.8 });
+  }
+
+  function rectsCollide(a, b) {
+    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+  }
+
+  function getPlayerRect() {
+    return {
+      left: playerX,
+      right: playerX + playerWidth,
+      top: game.clientHeight - 24 - 44,
+      bottom: game.clientHeight - 24
+    };
+  }
+
+  function gameLoop(timestamp) {
+    if (!running) return;
+    if (!lastTime) lastTime = timestamp;
+    const delta = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+
+    if (moveLeftHeld) movePlayer(-320 * delta);
+    if (moveRightHeld) movePlayer(320 * delta);
+
+    const playerRect = getPlayerRect();
+
+    obstacles = obstacles.filter(obj => {
+      obj.y += obj.speed * delta;
+      obj.el.style.top = obj.y + 'px';
+
+      const obstacleRect = {
+        left: obj.x,
+        right: obj.x + obj.size,
+        top: obj.y,
+        bottom: obj.y + obj.size
+      };
+
+      if (rectsCollide(playerRect, obstacleRect)) {
+        endGame();
+        return false;
+      }
+
+      if (obj.y > game.clientHeight + 80) {
+        obj.el.remove();
+        return false;
+      }
+      return true;
+    });
+
+    coins = coins.filter(obj => {
+      obj.y += obj.speed * delta;
+      obj.el.style.top = obj.y + 'px';
+
+      const coinRect = {
+        left: obj.x,
+        right: obj.x + obj.size,
+        top: obj.y,
+        bottom: obj.y + obj.size
+      };
+
+      if (rectsCollide(playerRect, coinRect)) {
+        score += 8;
+        scoreEl.textContent = score;
+        obj.el.remove();
+        return false;
+      }
+
+      if (obj.y > game.clientHeight + 40) {
+        obj.el.remove();
+        return false;
+      }
+      return true;
+    });
+
+    score += delta * 4;
+    scoreEl.textContent = Math.floor(score);
+
+    animationFrame = requestAnimationFrame(gameLoop);
+  }
+
+  function spawnLoop() {
+    if (!running) return;
+    createObstacle();
+    if (Math.random() < 0.65) createCoin();
+
+    const delay = Math.max(350, 820 - Math.floor(score * 4));
+    spawnTimer = setTimeout(spawnLoop, delay);
+  }
+
+  function clearObjects() {
+    obstacles.forEach(obj => obj.el.remove());
+    coins.forEach(obj => obj.el.remove());
+    obstacles = [];
+    coins = [];
+  }
+
+  function startGame() {
+    clearTimeout(spawnTimer);
+    cancelAnimationFrame(animationFrame);
+    clearObjects();
+    setupPlayer();
+    score = 0;
+    lastTime = 0;
+    running = true;
+    scoreEl.textContent = '0';
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    spawnLoop();
+    animationFrame = requestAnimationFrame(gameLoop);
+  }
+
+  function endGame() {
+    running = false;
+    clearTimeout(spawnTimer);
+    cancelAnimationFrame(animationFrame);
+    clearObjects();
+    const finalScore = Math.floor(score);
+    finalScoreEl.textContent = finalScore;
+    if (finalScore > best) {
+      best = finalScore;
+      localStorage.setItem('glowDodgeBest', best);
+      bestEl.textContent = best;
+    }
+    gameOverScreen.classList.remove('hidden');
+  }
+
+  function holdLeft(on) { moveLeftHeld = on; }
+  function holdRight(on) { moveRightHeld = on; }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveLeftHeld = true;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveRightHeld = true;
+  });
+
+  document.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveLeftHeld = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveRightHeld = false;
+  });
+
+  ;['mousedown','touchstart'].forEach(evt => {
+    leftBtn.addEventListener(evt, e => { e.preventDefault(); holdLeft(true); });
+    rightBtn.addEventListener(evt, e => { e.preventDefault(); holdRight(true); });
+  });
+
+  ;['mouseup','mouseleave','touchend','touchcancel'].forEach(evt => {
+    leftBtn.addEventListener(evt, e => { e.preventDefault(); holdLeft(false); });
+    rightBtn.addEventListener(evt, e => { e.preventDefault(); holdRight(false); });
+  });
+
+  game.addEventListener('mousemove', e => {
+    if (!running) return;
+    if (e.buttons === 1) setPlayerToPointer(e.clientX);
+  });
+
+  game.addEventListener('click', e => {
+    if (!running) return;
+    setPlayerToPointer(e.clientX);
+  });
+
+  game.addEventListener('touchmove', e => {
+    if (!running) return;
+    e.preventDefault();
+    setPlayerToPointer(e.touches[0].clientX);
+  }, { passive: false });
+
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
+  window.addEventListener('resize', setupPlayer);
+  setupPlayer();
+</script>
+</body>
+</html>
